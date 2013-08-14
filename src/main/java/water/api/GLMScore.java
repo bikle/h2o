@@ -1,6 +1,6 @@
 package water.api;
 
-import hex.DGLM.Family;
+import hex.DGLM;
 import hex.DGLM.GLMException;
 import hex.DGLM.GLMModel;
 import hex.DGLM.GLMValidation;
@@ -29,7 +29,7 @@ public class GLMScore extends Request {
   protected void queryArgumentValueSet(water.api.RequestArguments.Argument arg, java.util.Properties inputArgs) {
     if(arg == _modelKey && _modelKey.specified()){
       GLMModel m = _modelKey.value();
-      if(m._glmParams._family == Family.binomial){
+      if(m._glmParams._family.family == DGLM.Families.binomial){
         _thresholds._hideInQuery = false;
       }else{
         _thresholds.disable("only for binomial");

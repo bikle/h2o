@@ -1,9 +1,7 @@
 package water.api;
 
-import hex.DGLM.CaseMode;
-import hex.DGLM.Family;
-import hex.DGLM.GLMModel;
-import hex.DGLM.GLMParams;
+import hex.DGLM;
+import hex.DGLM.*;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -11,6 +9,7 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import water.Key;
+import water.api.RequestArguments.Real;
 import water.util.Log;
 import water.util.RString;
 
@@ -46,12 +45,13 @@ public class GLMGrid extends Request {
 
   // Args NOT Grid Searched
   protected final Int _maxIter = new Int(JSON_GLM_MAX_ITER, 50, 1, 1000000);
-  protected final EnumArgument<Family> _family = new EnumArgument(JSON_GLM_FAMILY,Family.binomial,true);
+  protected final EnumArgument<DGLM.Families> _family = new EnumArgument(JSON_GLM_FAMILY, DGLM.Families.binomial,true);
   protected final LinkArg _link = new LinkArg(_family,JSON_GLM_LINK);
 
   protected final CaseModeSelect _caseMode = new CaseModeSelect(_key,_y, _family, JSON_GLM_CASE_MODE,CaseMode.none);
   protected final CaseSelect _case = new CaseSelect(_key,_y,_caseMode,JSON_GLM_CASE);
   protected final Real _weight = new Real(JSON_GLM_WEIGHT,1.0);
+  protected final Real _tweediePower = new Real(TWEEDIE_POWER, 1.5);
 
   protected final Int _xval = new Int(XVAL, 10, 0, 1000000);
   protected final Real _betaEps = new Real(JSON_GLM_BETA_EPS,1e-4);
@@ -95,7 +95,7 @@ public class GLMGrid extends Request {
       }
     }
     if(arg == _family){
-      if(_family.value() != Family.binomial){
+      if(_family.value() != DGLM.Families.binomial){
         _caseMode.disable("Only for binomial family");
         _case.disable("Only for binomial family");
         _weight.disable("Only for binomial family");
@@ -112,13 +112,32 @@ public class GLMGrid extends Request {
   // ---
   // Make a new Grid Search object.
   @Override protected Response serve() {
-    GLMParams glmp = new GLMParams(_family.value());
+
+    GLMParams glmp; // = new GLMParams(_family.value());
+    //TODO ELH: BROKEN, DEFAULT LINK ONLY
+    switch( _family.value() ){
+      case binomial:
+        glmp = new GLMParams(DGLM.Family.binomial()); break;
+      case gamma:
+        glmp = new GLMParams(DGLM.Family.gamma()); break;
+      case gaussian:
+        glmp = new GLMParams(DGLM.Family.gaussian()); break;
+      case poisson:
+        glmp = new GLMParams(DGLM.Family.poisson()); break;
+      case tweedie:
+        glmp = new GLMParams(new DGLM.Family(DGLM.Families.tweedie, Link.tweedie(), null, _tweediePower.value())); break;
+      default:
+        glmp = null; break;
+    }
+
+
+
     glmp._betaEps = _betaEps.value();
     glmp._maxIter = _maxIter.value();
     glmp._caseMode = _caseMode.valid()?_caseMode.value():CaseMode.none;
     glmp._caseVal = _case.valid()?_case.value():Double.NaN;
     Key dest = Key.make();
-    double [] ts = glmp._family == Family.binomial?_thresholds.value()._arr:null;
+    double [] ts = glmp._family.family == DGLM.Families.binomial?_thresholds.value()._arr:null;
     hex.GLMGrid job = new hex.GLMGrid(dest,
                         _key.value(), // Hex data
                         glmp,

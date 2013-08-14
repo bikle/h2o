@@ -1,7 +1,7 @@
 package water.api;
 
 import hex.DGLM.CaseMode;
-import hex.DGLM.Family;
+import hex.DGLM.Families;
 import hex.DGLM.GLMModel;
 import hex.DGLM.Link;
 import hex.*;
@@ -1284,7 +1284,7 @@ public class RequestArguments extends RequestStatics {
   }
 
   public class CaseModeSelect extends EnumArgument<CaseMode> {
-    public CaseModeSelect(H2OHexKey key,H2OHexKeyCol classCol, EnumArgument<Family> family, String name, CaseMode defaultValue) {
+    public CaseModeSelect(H2OHexKey key,H2OHexKeyCol classCol, EnumArgument<DGLM.Families> family, String name, CaseMode defaultValue) {
       super(name, defaultValue);
       addPrerequisite(_key = key);
       addPrerequisite(_classCol  = classCol);
@@ -1294,7 +1294,7 @@ public class RequestArguments extends RequestStatics {
 
     public final H2OHexKey _key;
     public final H2OHexKeyCol _classCol;
-    public final EnumArgument<Family> _family;
+    public final EnumArgument<DGLM.Families> _family;
 
     @Override
     public String[] selectValues(){
@@ -1310,7 +1310,7 @@ public class RequestArguments extends RequestStatics {
     // select value explicitely again!!!
     @Override
     public CaseMode defaultValue() {
-      if(_family.value() == Family.binomial){
+      if(_family.value() == DGLM.Families.binomial){
         Column c = _key.value()._cols[_classCol.value()];
         if (c._domain!=null         ) return CaseMode.eq;
         if (c._min < 0 || c._max > 1) return CaseMode.gt;
@@ -1320,17 +1320,17 @@ public class RequestArguments extends RequestStatics {
 
   }
 
-  class LinkArg extends EnumArgument<Link> {
-    final EnumArgument<Family> _f;
+  class LinkArg extends EnumArgument<DGLM.Links> {
+    final EnumArgument<DGLM.Families> _f;
 
-    public LinkArg(EnumArgument<Family> f ,String name) {
-      super(name,f.defaultValue().defaultLink);
+    public LinkArg(EnumArgument<DGLM.Families> f, String name) {
+      super(name, DGLM.Links.familyDefault);
       addPrerequisite(_f = f);
     }
 
     @Override
-    protected Link defaultValue() {
-      return _f.value().defaultLink;
+    protected DGLM.Links defaultValue() {
+      return DGLM.Links.familyDefault;
     }
   }
 

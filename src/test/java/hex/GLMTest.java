@@ -10,6 +10,7 @@ import java.util.*;
 import org.junit.*;
 import water.*;
 import water.api.Constants;
+import water.api.GLM;
 import water.exec.Exec;
 import water.exec.PositionedException;
 
@@ -30,7 +31,7 @@ public class GLMTest extends TestUtil {
   }
 
   JsonObject computeGLMlog( LSMSolver lsms, ValueArray va ) {
-    return computeGLM( Family.binomial, lsms, va, null); }
+    return computeGLM( Family.binomial(), lsms, va, null); }
 
   JsonObject computeGLM( Family family, LSMSolver lsms, ValueArray va, int[] cols ) {
     // All columns in order, and use last as response variable
@@ -110,8 +111,8 @@ public class GLMTest extends TestUtil {
       DataFrame data = DGLM.getData(va, cols, null, false);
       String [] coefs = new String[] {"Intercept","0"};
       double [] vals = new double[] {1.0,1.0};
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.gamma), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
-      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.gamma), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(DGLM.Family.gamma()), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(DGLM.Family.gamma()), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
     }finally{
       UKV.remove(datakey);
     }
@@ -133,15 +134,15 @@ public class GLMTest extends TestUtil {
       DataFrame data = DGLM.getData(va, new int [] {0,1}, null, false);
       String [] coefs = new String [] {"Intercept","0"};
       double [] vals =  new double [] {Math.log(2),Math.log(2)};
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
-      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.poisson), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson()), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.poisson()), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
       // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
       va = va_maker(datakey2,
                    new byte []{1,2,3,4,5,6,7,8, 9, 10,11,12,13,14},
                    new byte []{0,1,2,3,1,4,9,18,23,31,20,25,37,45});
       vals[0] = 0.3396; vals[1] = 0.2565;
       data = DGLM.getData(va, new int [] {0,1}, null, false);
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson()), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
       // TODO: GG fails here (produces bad results
       //runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.poisson), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
     }finally{
@@ -168,17 +169,17 @@ public class GLMTest extends TestUtil {
       // NOTE: Null deviance is slightly off from R here. I compute the null deviance using mean from ValueArray,
       // R computes the mean only on the rows which are actually used during computation (those withou NAs), and the two means are slightly off
       // I don't think it is a big issue so I leave it as it is and skip null deviance comparison
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson), 1, cfs1, vls1, /*5138*/ Double.NaN, 427.4, Double.NaN, 2961, Double.NaN, 1e-4,1e-1);
-      runGLMTest(data,new GeneralizedGradientSolver(0,0), new GLMParams(Family.poisson), 1,  cfs1, vls1, /*5138*/ Double.NaN, 427.4, Double.NaN, 2961, Double.NaN, 1e-2,1e-1);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson()), 1, cfs1, vls1, /*5138*/ Double.NaN, 427.4, Double.NaN, 2961, Double.NaN, 1e-4,1e-1);
+      runGLMTest(data,new GeneralizedGradientSolver(0,0), new GLMParams(Family.poisson()), 1,  cfs1, vls1, /*5138*/ Double.NaN, 427.4, Double.NaN, 2961, Double.NaN, 1e-2,1e-1);
       // test gamma
       double [] vls2 = new double []{8.992e-03,1.818e-04,-1.125e-04,1.505e-06,-1.284e-06,4.510e-04,-7.254e-05};
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.gamma), 1, cfs1, vls2, 47.79, 4.618, Double.NaN, Double.NaN, Double.NaN, 1e-4,1e-1);
-      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.gamma), 1, cfs1, vls2, 47.79, 4.618, Double.NaN, Double.NaN, Double.NaN, 1e-4,1e-1);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.gamma()), 1, cfs1, vls2, 47.79, 4.618, Double.NaN, Double.NaN, Double.NaN, 1e-4,1e-1);
+      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.gamma()), 1, cfs1, vls2, 47.79, 4.618, Double.NaN, Double.NaN, Double.NaN, 1e-4,1e-1);
       // test gaussian
       double [] vls3 = new double []{166.95862,-0.00531,-2.46690,0.12635,0.02159,-4.66995,-0.85724};
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.gaussian), 1, cfs1, vls3, /*579300*/Double.NaN, 61640, Double.NaN, 3111,Double.NaN,1e-3,5e-1);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.gaussian()), 1, cfs1, vls3, /*579300*/Double.NaN, 61640, Double.NaN, 3111,Double.NaN,1e-3,5e-1);
       // TODO: GG is producing really low-precision results here...
-      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.gaussian), 1, cfs1, vls3, Double.NaN, Double.NaN, Double.NaN, 3111, Double.NaN,5e-1,5e-1);
+      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.gaussian()), 1, cfs1, vls3, Double.NaN, Double.NaN, Double.NaN, 3111, Double.NaN,5e-1,5e-1);
     } finally {
       UKV.remove(k);
     }
@@ -202,8 +203,8 @@ public class GLMTest extends TestUtil {
       double [] vals = new double [] {-8.14867, -0.01368, 0.32337, -0.38028, 0.55964, 0.49548, 0.02794, -0.01104, 0.97704};
       int [] cols = ary.getColumnIds(new String[]{"AGE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON","RACE","CAPSULE"});
       DataFrame data = DGLM.getData(ary, cols, null, true);
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.binomial), 1,  cfs1, vals, 512.3, 378.3, Double.NaN, 396.3 , Double.NaN,1e-3,5e-1);
-      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.binomial), 1,  cfs1, vals, 512.3, 378.3, Double.NaN, 396.3 , Double.NaN,1e-1,5e-1);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.binomial()), 1,  cfs1, vals, 512.3, 378.3, Double.NaN, 396.3 , Double.NaN,1e-3,5e-1);
+      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.binomial()), 1,  cfs1, vals, 512.3, 378.3, Double.NaN, 396.3 , Double.NaN,1e-1,5e-1);
     } finally {
       UKV.remove(k);
     }
@@ -236,8 +237,8 @@ public class GLMTest extends TestUtil {
       double [] vals     = new double [] {-4.1627,      -1.08386,       -0.71405,        0.07015 };
       int [] cols = ary.getColumnIds(colnames);
       DataFrame data = DGLM.getData(ary, cols, null, true);
-      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN,1e-3,1e-1);
-      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.poisson), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN,Double.NaN,1e-3,1e-1);
+      runGLMTest(data, new ADMMSolver(0,0), new GLMParams(Family.poisson()), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN,1e-3,1e-1);
+      runGLMTest(data, new GeneralizedGradientSolver(0,0), new GLMParams(Family.poisson()), 1, coefs, vals, Double.NaN, Double.NaN, Double.NaN, Double.NaN,Double.NaN,1e-3,1e-1);
     } finally {
       UKV.remove(k);
     }
@@ -260,7 +261,7 @@ public class GLMTest extends TestUtil {
       assertEquals( 0.1, lr.get("Beta1"   ).getAsDouble(), 0.000001);
       assertEquals( 1.0, lr.get("RSquared").getAsDouble(), 0.000001);
       LSMSolver lsms = new ADMMSolver(0,0);
-      JsonObject glm = computeGLM(Family.gaussian,lsms,va,null); // Solve it!
+      JsonObject glm = computeGLM(Family.gaussian(),lsms,va,null); // Solve it!
       JsonObject coefs = glm.get("coefficients").getAsJsonObject();
       assertEquals( 0.0, coefs.get("Intercept").getAsDouble(), 0.000001);
       assertEquals( 0.1, coefs.get("0")        .getAsDouble(), 0.000001);
@@ -389,7 +390,7 @@ public class GLMTest extends TestUtil {
       ValueArray va = DKV.get(k2).get();
       // Compute the coefficients
       LSMSolver lsmsx = new ADMMSolver(0,0.0);
-      JsonObject glm = computeGLM( Family.binomial, lsmsx, va, cols );
+      JsonObject glm = computeGLM( Family.binomial(), lsmsx, va, cols );
 
       // Now run the dataset through the equation and see how close we got
       JsonObject coefs = glm.get("coefficients").getAsJsonObject();
@@ -518,7 +519,7 @@ public class GLMTest extends TestUtil {
 
     LSMSolver lsms = new ADMMSolver(0.0001/*lambda*/,1/*alpha*/);
     // Now a Gaussian GLM model for the same thing
-    GLMParams glmp = new GLMParams(Family.gaussian);
+    GLMParams glmp = new GLMParams(Family.gaussian());
     glmp._link = glmp._family.defaultLink;
     glmp._betaEps = 0.000001;
     glmp._maxIter = 50;

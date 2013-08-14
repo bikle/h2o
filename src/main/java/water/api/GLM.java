@@ -2,12 +2,14 @@ package water.api;
 
 import hex.*;
 import hex.DGLM.CaseMode;
+import hex.DGLM.Families;
 import hex.DGLM.Family;
 import hex.DGLM.GLMException;
 import hex.DGLM.GLMJob;
 import hex.DGLM.GLMModel;
 import hex.DGLM.GLMParams;
 import hex.DGLM.Link;
+import hex.DGLM.Links;
 import hex.DLSM.ADMMSolver;
 import hex.DLSM.GeneralizedGradientSolver;
 import hex.DLSM.LSMSolver;
@@ -30,7 +32,7 @@ public class GLM extends Request {
   protected final H2OHexKeyCol _y = new H2OHexKeyCol(Y, _key);
   protected final HexColumnSelect _x = new HexNonConstantColumnSelect(X, _key, _y);
   protected final H2OGLMModelKey _modelKey = new H2OGLMModelKey(MODEL_KEY,false);
-  protected final EnumArgument<Family> _family = new EnumArgument(FAMILY,Family.gaussian,true);
+  protected final EnumArgument<Families> _family = new EnumArgument(FAMILY,Families.gaussian,true);
   protected final LinkArg _link = new LinkArg(_family,LINK);
   protected final Real _lambda = new Real(LAMBDA, 1e-5); // TODO I do not know the bounds
   protected final Real _alpha = new Real(ALPHA, 0.5, 0, 1, "");
@@ -47,6 +49,7 @@ public class GLM extends Request {
   protected final Real _betaEps = new Real(BETA_EPS,1e-4);
   protected final Int _maxIter = new Int(MAX_ITER, 50, 1, 1000000);
   //protected final Bool _reweightGram = new Bool("reweigthed_gram_xval", false, "Set to force reweighted gram matrix for cross-validation (non-reweighted xval is much faster, less precise).");
+
 
   public GLM() {
       _requestHelp = "Compute generalized linear model with penalized maximum likelihood. Penalties include the lasso (L1 penalty), ridge regression (L2 penalty) or elastic net penalty (combination of L1 and L2) penalties. The penalty function is defined as :<br/>" +
@@ -130,13 +133,13 @@ public class GLM extends Request {
       if(_caseMode.value() == CaseMode.none)
         _case.disable("n/a");
     } else if (arg == _family) {
-      if (_family.value() != Family.binomial) {
+      if (_family.value() != Families.binomial) {
         _case.disable("Only for family binomial");
         _caseMode.disable("Only for family binomial");
         _caseWeight.disable("Only for family binomial");
         _thresholds.disable("Only for family binomial");
       }
-      if (_family.value() != Family.tweedie){
+      if (_family.value() != Families.tweedie){
         _tweediePower.disable("Only for family tweedie");
       }
     } else if (arg == _expertSettings){
@@ -183,8 +186,25 @@ public class GLM extends Request {
   }
 
   GLMParams getGLMParams(){
-    GLMParams res = new GLMParams(_family.value(),_link.value());
-    if( res._link == Link.familyDefault )
+    GLMParams res;
+    //TODO ELH: BROKEN, DEFAULT LINK ONLY
+    //TODO ELH: tweedie only supports tweedie link
+    switch( _family.value() ){
+      case binomial:
+        res = new GLMParams(Family.binomial()); break;
+      case gamma:
+        res = new GLMParams(Family.gamma()); break;
+      case gaussian:
+        res = new GLMParams(Family.gaussian()); break;
+      case poisson:
+        res = new GLMParams(Family.poisson()); break;
+      case tweedie:
+        res = new GLMParams(new Family(Families.tweedie, Link.tweedie(), null, _tweediePower.value())); break;
+      default:
+          res = null; break;
+    }
+
+    if( res._link._link == Links.familyDefault )
       res._link = res._family.defaultLink;
     res._maxIter = _maxIter.value();
     res._betaEps = _betaEps.value();
@@ -207,7 +227,7 @@ public class GLM extends Request {
       res.addProperty("h2o", H2O.SELF.toString());
       GLMParams glmParams = getGLMParams();
 
-      if (glmParams._family == Family.tweedie){
+      if (glmParams._family.family == Families.tweedie){
         double p = _tweediePower.value();
         if (! ((1. < p && p < 2.) || (2. < p && p < 3.) || (3. < p && p < 20.)) ){
           return Response.error("tweedie family specified but invalid tweedie power: must be in (1,2) + (2,3) + (3,20)");

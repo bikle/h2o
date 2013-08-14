@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.*;
 import hex.DGLM.Family;
 import hex.DGLM.GLMModel;
 import hex.DLSM.LSMSolver;
@@ -52,7 +53,7 @@ public class GLMGridProgress extends Request {
       o.addProperty(KEY, m._selfKey.toString());
       o.addProperty(LAMBDA, lsm._lambda);
       o.addProperty(ALPHA, lsm._alpha);
-      if(m._glmParams._family == Family.binomial) {
+      if(m._glmParams._family.family == DGLM.Families.binomial) {
         o.addProperty(BEST_THRESHOLD, m._vals[0].bestThreshold());
         o.addProperty(AUC, m._vals[0].AUC());
         double[] classErr = m._vals[0].classError();
