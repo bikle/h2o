@@ -186,6 +186,10 @@ public abstract class DGLM {
               "Invalid response variable " + ycol._name
                   + ", Binomial family requires response to be from [0,1] or have Case predicate. ");
           break;
+        case tweedie:
+          if( ycol._min < 0 ) throw new GLMException("Invalid response variable " + ycol._name +
+              " Tweedie with p in (1,2) + (2,3) + (3,\\inf) are positive distributions");
+
         default:
           //pass
       }
@@ -255,11 +259,18 @@ public abstract class DGLM {
     //    sqrt(0),
     inverse(0),
     //    oneOverMu2(0);
+    tweedie(0),
     ;
     public final double defaultBeta;
+    public final double variancePower;
 
     Link(double b) {
       defaultBeta = b;
+      variancePower = Double.NaN;
+    }
+    Link(double b, double variance_power){
+      defaultBeta = b;
+      variancePower = variance_power;
     }
 
     public final double link(double x) {
@@ -274,6 +285,8 @@ public abstract class DGLM {
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
+        case tweedie:
+          return Math.pow(x, 1. - variancePower);
         default:
           throw new RuntimeException("unsupported link function id  " + this);
       }
@@ -289,6 +302,8 @@ public abstract class DGLM {
           return 1.0 / x;
         case inverse:
           return -1.0 / (x * x);
+        case tweedie:
+          return (1. - variancePower) * Math.pow(x, -variancePower);
         default:
           throw H2O.unimpl();
       }
@@ -305,6 +320,8 @@ public abstract class DGLM {
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return 1.0 / xx;
+        case tweedie:
+          return Math.pow(x, 1/(1. - variancePower));
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -324,6 +341,8 @@ public abstract class DGLM {
         case inverse:
           double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
           return -1 / (xx * xx);
+        case tweedie:
+          double vp = 1 / (1 - variancePower);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -338,14 +357,23 @@ public abstract class DGLM {
 
   // supported families
   public static enum Family {
-    gaussian(Link.identity, null), binomial(Link.logit, new double[] { Double.NaN, 1.0, 0.5 }), poisson(Link.log, null), gamma(
-        Link.inverse, null);
+    gaussian(Link.identity, null), binomial(Link.logit, new double[] { Double.NaN, 1.0, 0.5 }), poisson(Link.log, null),
+    gamma(Link.inverse, null),
+    tweedie(Link.tweedie, null, 1.5);
     public final Link defaultLink;
     public final double[] defaultArgs;
+    public final double variancePower;
 
     Family(Link l, double[] d) {
       defaultLink = l;
       defaultArgs = d;
+      variancePower = Double.NaN;
+    }
+
+    Family(Link l, double[] d, double variancePower){
+      defaultLink = l;
+      defaultArgs = d;
+      this.variancePower = variancePower;
     }
 
     public double mustart(double y) {
@@ -374,6 +402,8 @@ public abstract class DGLM {
           return mu;
         case gamma:
           return mu * mu;
+        case tweedie:
+          return Math.pow(mu, variancePower);
         default:
           throw new RuntimeException("unknown family Id " + this);
       }

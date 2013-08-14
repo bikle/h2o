@@ -35,6 +35,7 @@ public class GLM extends Request {
   protected final Real _lambda = new Real(LAMBDA, 1e-5); // TODO I do not know the bounds
   protected final Real _alpha = new Real(ALPHA, 0.5, 0, 1, "");
   protected final Real _caseWeight = new Real(WEIGHT,1.0);
+  protected final Real _tweediePower = new Real(TWEEDIE_POWER, 1.5);
   protected final CaseModeSelect _caseMode = new CaseModeSelect(_key,_y,_family, CASE_MODE,CaseMode.none);
   protected final CaseSelect _case = new CaseSelect(_key,_y,_caseMode,CASE);
   protected final Int _xval = new Int(XVAL, 10, 0, 1000000);
@@ -135,6 +136,9 @@ public class GLM extends Request {
         _caseWeight.disable("Only for family binomial");
         _thresholds.disable("Only for family binomial");
       }
+      if (_family.value() != Family.tweedie){
+        _tweediePower.disable("Only for family tweedie");
+      }
     } else if (arg == _expertSettings){
       if(_expertSettings.value()){
         _lsmSolver._hideInQuery = false;
@@ -202,6 +206,14 @@ public class GLM extends Request {
       res.addProperty("key", ary._key.toString());
       res.addProperty("h2o", H2O.SELF.toString());
       GLMParams glmParams = getGLMParams();
+
+      if (glmParams._family == Family.tweedie){
+        double p = _tweediePower.value();
+        if (! ((1. < p && p < 2.) || (2. < p && p < 3.) || (3. < p && p < 20.)) ){
+          return Response.error("tweedie family specified but invalid tweedie power: must be in (1,2) + (2,3) + (3,20)");
+        }
+      }
+
       DataFrame data = DGLM.getData(ary, columns, null, _standardize.value());
       LSMSolver lsm = null;
       switch(_lsmSolver.value()){
