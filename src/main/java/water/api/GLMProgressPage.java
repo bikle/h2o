@@ -178,8 +178,8 @@ public class GLMProgressPage extends Request {
     private static String glmParamsHTML( GLMModel m ) {
       StringBuilder sb = new StringBuilder();
       GLMParams glmp = m._glmParams;
-      parm(sb,"family",glmp._family);
-      parm(sb,"link",glmp._link);
+      parm(sb,"family",glmp._family.family);
+      parm(sb,"link",glmp._link._link);
       parm(sb,"&alpha;",m._solver._alpha);
       parm(sb,"&lambda;",m._solver._lambda);
       parm(sb,EPSILON,glmp._betaEps);
@@ -207,6 +207,7 @@ public class GLMProgressPage extends Request {
       case logit:    eq = new RString("y = 1/(1 + Math.exp(-(%equation)))");  break;
       case log:      eq = new RString("y = Math.exp((%equation)))");  break;
       case inverse:  eq = new RString("y = 1/(%equation)");  break;
+      case tweedie:  eq = new RString("y = (%equation)^(1 - " + m._glmParams._family.variancePower + ")"); break;
       default:       eq = new RString("equation display not implemented"); break;
       }
       StringBuilder sb = new StringBuilder();
