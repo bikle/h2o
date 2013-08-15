@@ -273,7 +273,7 @@ public abstract class DGLM {
     familyDefault, identity, logit, log, inverse, tweedie
   }
 
-  public static class Link {
+  public static class Link extends Iced {
 //
 //    familyDefault(0), identity(0), logit(0), log(0.1),
 //    inverse(0),
@@ -371,7 +371,7 @@ public abstract class DGLM {
           return -1 / (xx * xx);
         case tweedie:
           double vp = 1 / (1 - _variancePower);
-          throw new RuntimeException("elh: linkInvDeriv tweedie fml");
+          return vp * Math.pow(x, _variancePower * vp);
         default:
           throw new RuntimeException("unexpected link function id  " + this);
       }
@@ -426,6 +426,8 @@ public abstract class DGLM {
           return y + 0.1;
         case gamma:
           return y;
+        case tweedie:
+          return y + 0.1;
         default:
           throw new RuntimeException("unimplemented");
       }
@@ -469,6 +471,15 @@ public abstract class DGLM {
         case gamma:
           if( yr == 0 ) return -2;
           return -2 * (Math.log(yr / ym) - (yr - ym) / ym);
+
+        case tweedie:
+          // pg49: $$ d(y;\mu) = 2 [ y \cdot \left(\tau^{-1}(y) - \tau^{-1}(\mu) \right) - \kappa \{ \tau^{-1}(y)\} + \kappa \{ \tau^{-1}(\mu)\} ] $$
+          // pg133: $$ \frac{ y^{2 - p} }{ (1 - p) (2-p) }  - \frac{y \cdot \mu^{1-p}}{ 1-p} + \frac{ \mu^{2-p} }{ 2 - p }$$
+          double one_minus_p = 1. - variancePower;
+          double two_minus_p = 2. - variancePower;
+
+          return Math.pow(yr, two_minus_p) / (one_minus_p * two_minus_p) - (yr * (Math.pow(ym, one_minus_p)))/one_minus_p + Math.pow(ym, two_minus_p)/two_minus_p;
+
         default:
           throw new RuntimeException("unknown family Id " + this);
       }
